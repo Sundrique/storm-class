@@ -16,17 +16,8 @@ import backtype.storm.utils.Utils;
 
 import java.util.Map;
 
-//********* TO DO 1-of-4 imported http://mvnrepository.com/artifact/com.lambdaworks/lettuce/
-
-
-// COPY AND PASE: following code into pom.xml file (located lesson1/stage1/pom.xml)
-//<dependency>
-//  <groupId>com.lambdaworks</groupId>
-//  <artifactId>lettuce</artifactId>
-//  <version>2.3.3</version>
-//</dependency>
-//
-//********* END 1-of-4
+import com.lambdaworks.redis.RedisConnection;
+import com.lambdaworks.redis.RedisClient;
 
 /**
  * This is a basic example of a Storm topology.
@@ -51,11 +42,8 @@ public class ReporterExclamationTopology {
     // To output tuples from this bolt to the next stage bolts, if any
     OutputCollector _collector;
 
-    //********* TO DO 2-of-4
     // place holder to keep the connection to redis
-
-
-    //********* END 2-of-4
+    RedisConnection<String,String> redis;
 
     @Override
     public void prepare(
@@ -66,12 +54,13 @@ public class ReporterExclamationTopology {
       // save the output collector for emitting tuples
       _collector = collector;
 
-      //********* TO DO 3-of-4
       // instantiate a redis connection
+
+      RedisClient client = new RedisClient("localhost",6379);
 
       // initiate the actual connection
 
-      //********* END 3-of-4
+      redis = client.connect();
     }
 
     @Override
@@ -87,10 +76,8 @@ public class ReporterExclamationTopology {
       // emit the word with exclamations
       _collector.emit(tuple, new Values(exclamatedWord.toString()));
 
-      //********* TO DO 4-of-4 Uncomment redis reporter
-      //long count = 30;
-      //redis.publish("WordCountTopology", exclamatedWord.toString() + "|" + Long.toString(count));
-      //********* END 4-of-4
+      long count = 30;
+      redis.publish("WordCountTopology", exclamatedWord.toString() + "|" + Long.toString(count));
     }
 
     @Override
