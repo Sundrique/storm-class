@@ -16,12 +16,14 @@ import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
 import backtype.storm.utils.Utils;
 
-class TweetTopology
+class TopNTweetTopology
 {
   public static void main(String[] args) throws Exception
   {
     // create the topology
     TopologyBuilder builder = new TopologyBuilder();
+
+    int TOP_N = 10;
 
     /*
      * In order to create the spout, you need to get twitter credentials
@@ -34,10 +36,10 @@ class TweetTopology
 
     // now create the tweet spout with the credentials
     TweetSpout tweetSpout = new TweetSpout(
-        "[Your customer key]",
-        "[Your secret key]",
-        "[Your access token]",
-        "[Your access secret]"
+      "Cyf0mAckHSHGkw7pJ5sk289GY",
+      "MAEpJQgAPw71KP7gAJGqp9em2qUJ1pSipU2d41RhFqWDuznVQu",
+      "18333166-Xq3Xc1N0j5P1TXChB31TcLOkNzw6wDXoQwHPlG92K",
+      "0TWjHzOVNFjS3JBt6loGUkS640yi6CGy7PcoH2hKykD9B"
     );
 
     // attach the tweet spout to the topology - parallelism of 1
@@ -47,13 +49,14 @@ class TweetTopology
     builder.setBolt("parse-tweet-bolt", new ParseTweetBolt(), 10).shuffleGrouping("tweet-spout");
 
     // attach the count bolt using fields grouping - parallelism of 15
-    //builder.setBolt("count-bolt", new CountBolt(), 15).fieldsGrouping("parse-tweet-bolt", new Fields("tweet-word"));
+    builder.setBolt("count-bolt", new CountBolt(), 15).fieldsGrouping("parse-tweet-bolt", new Fields("tweet-word"));
 
-    // attach rolling count bolt using fields grouping - parallelism of 5
-    builder.setBolt("rolling-count-bolt", new RollingCountBolt(30, 10), 1).fieldsGrouping("parse-tweet-bolt", new Fields("tweet-word"));
+    builder.setBolt("intermediate-bolt", new IntermediateRankingsBolt(TOP_N), 10).shuffleGrouping("count-bolt");
+
+    builder.setBolt("total-bolt", new TotalRankingsBolt(TOP_N), 1).globalGrouping("intermediate-bolt");
 
     // attach the report bolt using global grouping - parallelism of 1
-    builder.setBolt("report-bolt", new ReportBolt(), 1).globalGrouping("rolling-count-bolt");
+    builder.setBolt("report-bolt", new ReportBolt(), 1).globalGrouping("total-bolt");
 
     // create the default config object
     Config conf = new Config();

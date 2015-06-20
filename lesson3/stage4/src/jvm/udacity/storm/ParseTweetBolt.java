@@ -17,11 +17,12 @@ import backtype.storm.tuple.Values;
 import backtype.storm.utils.Utils;
 
 import java.util.Map;
+import java.util.Arrays;
 
 /**
  * A bolt that parses the tweet into words
  */
-public class ParseTweetBolt extends BaseRichBolt 
+public class ParseTweetBolt extends BaseRichBolt
 {
   // To output tuples from this bolt to the count bolt
   OutputCollector collector;
@@ -30,14 +31,14 @@ public class ParseTweetBolt extends BaseRichBolt
   public void prepare(
       Map                     map,
       TopologyContext         topologyContext,
-      OutputCollector         outputCollector) 
+      OutputCollector         outputCollector)
   {
     // save the output collector for emitting tuples
     collector = outputCollector;
   }
 
   @Override
-  public void execute(Tuple tuple) 
+  public void execute(Tuple tuple)
   {
     // get the 1st column 'tweet' from tuple
     String tweet = tuple.getString(0);
@@ -50,12 +51,14 @@ public class ParseTweetBolt extends BaseRichBolt
 
     // for each token/word, emit it
     for (String token: tokens) {
-      collector.emit(new Values(token));
+      if (token.length() > 3 && token.startsWith("#")) {
+        collector.emit(new Values(token));
+      }
     }
   }
 
   @Override
-  public void declareOutputFields(OutputFieldsDeclarer declarer) 
+  public void declareOutputFields(OutputFieldsDeclarer declarer)
   {
     // tell storm the schema of the output tuple for this spout
     // tuple consists of a single column called 'tweet-word'
